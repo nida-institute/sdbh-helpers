@@ -127,7 +127,9 @@ declare function local:record(
         "subject_english":      if (exists($subj-node)) then string($head-m/@english)
                                 else string-join(distinct-values($ref-words ! string(@english)), "; "),
         "subject_lex_domain":   if (exists($subj-node)) then $lex else $ref-lex,
-        "subj_ref":             $subj-ref-str,
+        "subj_ref":             if (exists($subj-node))
+                                then string-join($subj-words ! string(@morphId), " ")
+                                else $subj-ref-str,
         "verb_morph":           string($verb-m/@morph),
         "verb_stem":            string($verb-m/@stem),
         "verb_person":          string($verb-m/@person),
