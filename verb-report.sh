@@ -32,7 +32,7 @@ for verb in "${verbs[@]}"; do
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo "▶  Processing: ${verb}"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    python3 -c "from llmflow.cli import main; main()" -- run \
+    sp run \
         --pipeline "${PIPELINE}" \
         --var "lemma=${verb}"
 done

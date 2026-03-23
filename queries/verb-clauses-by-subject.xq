@@ -104,25 +104,28 @@ declare function local:record(
     let $pos           := string($head-m/@pos)
     let $subj-ref-str  := string($verb-m/parent::Node/@SubjRef)
     let $subj-ref-ids  := tokenize($subj-ref-str, "\s+")[. != ""]
-    (: Resolve implicit subject via SubjRef → @morphId lookup :)
-    let $ref-node      := if (empty($subj-node) and exists($subj-ref-ids))
-                          then $ref-map($subj-ref-ids[1])
+    (: Resolve implicit subject via SubjRef → @morphId lookup.
+       SubjRef may list multiple co-referent morphIds; collect a word from each. :)
+    let $ref-words     := if (empty($subj-node) and exists($subj-ref-ids))
+                          then
+                              for $id in $subj-ref-ids
+                              let $n := $ref-map($id)
+                              where exists($n)
+                              return ($n//m[@LexDomain != ""])[1]
                           else ()
-    let $ref-word      := ($ref-node//m[@LexDomain != ""])[1]
+    let $ref-word      := $ref-words[1]   (: first referent drives type/domain :)
     let $ref-lex       := string($ref-word/@LexDomain)
     let $ref-pos       := string($ref-word/@pos)
     return map {
         "ref":                  $ref,
         "type":                 if   (exists($subj-node)) then local:subject-type($lex, $pos)
-                                else if (exists($ref-node)) then local:subject-type($ref-lex, $ref-pos)
+                                else if (exists($ref-word)) then local:subject-type($ref-lex, $ref-pos)
                                 else "Implicit",
         "has_explicit_subject": exists($subj-node),
         "subject_lemma":        if (exists($subj-node)) then string($head-m/@lemma)
-                                else if (exists($ref-node)) then string($ref-word/@lemma)
-                                else "",
+                                else string-join(distinct-values($ref-words ! string(@lemma)), " "),
         "subject_english":      if (exists($subj-node)) then string($head-m/@english)
-                                else if (exists($ref-node)) then string($ref-word/@english)
-                                else "",
+                                else string-join(distinct-values($ref-words ! string(@english)), "; "),
         "subject_lex_domain":   if (exists($subj-node)) then $lex else $ref-lex,
         "subj_ref":             $subj-ref-str,
         "verb_morph":           string($verb-m/@morph),
