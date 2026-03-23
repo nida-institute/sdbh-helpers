@@ -1,0 +1,62 @@
+name: Hebrew Verb Subject Report
+description: |
+  Analyses a Hebrew verb lemma by subject type using the Macula Hebrew corpus.
+  Step 1: XQuery extracts all clauses and groups them by subject category (God,
+          People, Place, Abstract, etc.) using SDBH LexDomain codes.
+  Step 2: LLM renders the structured JSON into a human-readable Markdown report.
+
+  Run from the sdbh-helpers repo root:
+    llmflow run --pipeline pipelines/verb-subject-report.yaml
+
+  To analyse a different verb, edit the default in queries/verb-clauses-by-subject.xq
+  (external variable $lemma) until pipeline -bind support is available.
+
+variables:
+  prompts_dir: prompts
+  output_dir: output
+  lemma: "הָיָה"
+
+steps:
+  - name: prepare-query
+    type: function
+    description: "Inject lemma into XQuery template (avoids format_map/XQuery brace conflict)"
+    function: scripts.prepare_query.prepare_verb_query
+    inputs:
+      query_template_path: "queries/verb-clauses-by-subject.xq"
+      lemma: "${lemma}"
+    outputs:
+      - prepared_xq_path
+
+  - name: query-corpus
+    type: basex
+    description: "Extract clause data for the verb from macula-hebrew-nodes"
+    query_file: "${prepared_xq_path}"
+    database: macula-hebrew-nodes
+    timeout: 180
+    outputs:
+      - corpus_json
+    saveas:
+      path: "${output_dir}/${lemma}-subject-data.json"
+
+  - name: trim-for-llm
+    type: function
+    description: "Strip full clause listings, keeping only summary + sample_groups for the LLM"
+    function: scripts.prepare_query.trim_corpus_for_llm
+    inputs:
+      corpus_json: "${corpus_json}"
+    outputs:
+      - llm_corpus_json
+
+  - name: render-report
+    type: llm
+    description: "Convert the structured JSON into a Markdown research report"
+    prompt:
+      file: render-report.md
+      inputs:
+        corpus_json: "${llm_corpus_json}"
+    model: gpt-4o
+    max_tokens: 4000
+    outputs:
+      - report_md
+    saveas:
+      path: "${output_dir}/${lemma}.md"
