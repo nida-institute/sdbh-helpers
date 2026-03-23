@@ -1,6 +1,5 @@
 tmp/
 llmflow.log
-output/*-subject-data.json
 __pycache__/
 *.pyc
 
