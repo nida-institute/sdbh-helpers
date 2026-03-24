@@ -1,26 +1,55 @@
 # Installing sdbh-helpers
 
-## 1. Install Scripture Pipelines (LLMFlow)
+## Prerequisites
 
-Follow the instructions in the [LLMFlow INSTALL.md](https://github.com/nida-institute/LLMFlow/blob/main/INSTALL.md) to install the `sp` binary and configure your API key.
+- macOS or Linux (zsh or bash)
+- Python 3.10+
+- An OpenAI API key (used by the LLM report step)
 
-## 2. Install BaseX
+---
 
-Download and install [BaseX](https://basex.org/download/) (version 9 or later is required).
+## 1. Clone this repository
+
+```bash
+git clone https://github.com/nida-institute/sdbh-helpers.git
+cd sdbh-helpers
+```
+
+---
+
+## 2. Install `sp` (Scripture Pipelines / LLMFlow)
+
+`sp` is the pipeline runner. Follow the instructions in the
+[LLMFlow INSTALL.md](https://github.com/nida-institute/LLMFlow/blob/main/INSTALL.md)
+to install it and configure your OpenAI API key.
+
+After installation, verify:
+```bash
+sp --version
+```
+
+---
+
+## 3. Install BaseX
+
+The XQuery step queries a local [BaseX](https://basex.org/) database.
+Version 9 or later is required (XQuery 3.1 support).
 
 On macOS with Homebrew:
 ```bash
 brew install basex
-```
-
-Verify:
-```bash
 basex -version
 ```
 
-## 3. Load the Macula Hebrew data into BaseX
+For other platforms, download from [basex.org/download](https://basex.org/download/).
 
-The pipelines query a BaseX database named **`macula-hebrew-nodes`** built from the [macula-hebrew](https://github.com/Clear-Bible/macula-hebrew) repository.
+---
+
+## 4. Build the macula-hebrew-nodes database
+
+The pipelines query a BaseX database named **`macula-hebrew-nodes`** built
+from the [Clear-Bible/macula-hebrew](https://github.com/Clear-Bible/macula-hebrew)
+repository (the Macula Hebrew WLC node trees).
 
 ### Clone the data
 
@@ -28,17 +57,15 @@ The pipelines query a BaseX database named **`macula-hebrew-nodes`** built from 
 git clone https://github.com/Clear-Bible/macula-hebrew.git
 ```
 
-### Create the BaseX database
-
-From the BaseX GUI or the command line, create a database named `macula-hebrew-nodes` from the `WLC/nodes/` subdirectory:
+### Create the database
 
 ```bash
 basex -c "CREATE DB macula-hebrew-nodes /path/to/macula-hebrew/WLC/nodes/"
 ```
 
-Replace `/path/to/macula-hebrew` with the actual path where you cloned the repo.
-
-This imports all per-chapter XML files (e.g. `01-Gen-001.xml`) into a single queryable database. Indexing takes a few minutes.
+Replace `/path/to/macula-hebrew` with the actual clone location.
+This imports all per-chapter XML files (one per chapter of the Hebrew Bible)
+into a single queryable database. Initial indexing takes a few minutes.
 
 ### Verify
 
@@ -46,12 +73,43 @@ This imports all per-chapter XML files (e.g. `01-Gen-001.xml`) into a single que
 basex -c "OPEN macula-hebrew-nodes; XQUERY count(//m)"
 ```
 
-You should see a large number (several hundred thousand morphemes).
+Expected output: a number in the hundreds of thousands (one `<m>` per morpheme
+across the entire Hebrew Bible).
 
-## 4. Run a pipeline
+---
+
+## 5. Run a report
+
+Generate a subject-type analysis for a Hebrew verb lemma.
+The lemma must be given with full vowel markings (niqqud), as stored in Macula:
 
 ```bash
 ./verb-report.sh הָיָה
 ```
 
-Output is written to `output/הָיָה.md` and `output/הָיָה-subject-data.json`.
+Multiple verbs can be processed in one call:
+
+```bash
+./verb-report.sh הָיָה רָבָה
+./verb-report.sh "הָיָה,רָבָה,הָלַךְ"
+```
+
+### Output files (written to `output/`)
+
+| File | Contents |
+|------|----------|
+| `<lemma>-subject-data.json` | Full structured data: all clause records grouped by subject type, plus a sample subset and a `needs_review` list |
+| `<lemma>.md` | LLM-generated Markdown report: summary table, per-group characterisations, and linguistic observations |
+
+---
+
+## Querying the data directly
+
+You can run the XQuery against the database without the pipeline:
+
+```bash
+basex -blemma=הָיָה queries/verb-clauses-by-subject.xq > out.json
+```
+
+See the comments at the top of [queries/verb-clauses-by-subject.xq](queries/verb-clauses-by-subject.xq)
+for a full description of the output schema and subject-resolution logic.
