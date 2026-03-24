@@ -16,6 +16,7 @@ def prepare_verb_query(query_template_path: str, lemma: str) -> str:
     with open(query_template_path, encoding="utf-8") as fh:
         query = fh.read()
 
+    lemma = lemma.strip()
     query = query.replace("__LEMMA__", lemma)
 
     out_dir = "tmp/queries"
