@@ -6,10 +6,8 @@ description: |
   Step 2: LLM renders the structured JSON into a human-readable Markdown report.
 
   Run from the sdbh-helpers repo root:
-    llmflow run --pipeline pipelines/verb-subject-report.yaml
-
-  To analyse a different verb, edit the default in queries/verb-clauses-by-subject.xq
-  (external variable $lemma) until pipeline -bind support is available.
+    ./verb-report.sh הָיָה
+    ./verb-report.sh הָיָה הָלַךְ   # multiple verbs
 
 variables:
   prompts_dir: prompts
