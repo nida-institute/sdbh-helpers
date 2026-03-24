@@ -118,6 +118,7 @@ declare function local:record(
     let $ref-pos       := string($ref-word/@pos)
     return map {
         "ref":                  $ref,
+        "verb_ref":             string($verb-m/@word),
         "type":                 if   (exists($subj-node)) then local:subject-type($lex, $pos)
                                 else if (exists($ref-word)) then local:subject-type($ref-lex, $ref-pos)
                                 else "Implicit",
